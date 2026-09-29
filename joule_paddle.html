@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ジュールの実験 — 仕事と熱（内部エネルギー）</title>
+<style>
+:root {
+  --primary: #1976d2;
+  --primary-dark: #0d47a1;
+  --primary-light: #e3f2fd;
+  --accent: #e65100;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+button, input, select { font: inherit; }
+button {
+  cursor: pointer;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  padding: 8px 16px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+button:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+button.primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+button.danger {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fff;
+}
+button.danger:hover:not(:disabled) {
+  background: #fef2f2;
+}
+input[type=range] {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+  height: 24px;
+}
+input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Header & Tabs */
+header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+}
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  padding: 10px 20px;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: -2px;
+}
+.tab[aria-selected=true] {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.badge {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+/* Grid Layout */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* Sim Area */
+.stage {
+  background: #fdfefe;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.stage svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.stage svg .drag-target {
+  cursor: ns-resize;
+  touch-action: none;
+}
+.stage svg.locked .drag-target {
+  cursor: default;
+}
+
+/* Readouts */
+.readouts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.readout {
+  padding: 12px 20px;
+}
+.readout:first-child {
+  border-right: 1px solid var(--border);
+}
+.readout-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.readout-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.readout-value span {
+  font-size: 16px;
+  margin-left: 4px;
+  color: var(--text-muted);
+}
+.readout-value.highlight {
+  color: var(--accent);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  flex-wrap: wrap;
+}
+.speed-wrap {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.speed-wrap select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  min-height: 36px;
+}
+
+/* Energy Bar */
+.energy-card {
+  margin-top: 16px;
+  padding: 16px 20px;
+}
+.energy-bar-wrap {
+  height: 24px;
+  display: flex;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.bar-uw { background: #0288d1; transition: width 0.1s; }
+.bar-uc { background: #78909c; transition: width 0.1s; }
+.bar-q  { background: #f57c00; transition: width 0.1s; }
+.energy-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* Control Panel */
+.controls {
+  padding: 20px;
+}
+.control-group {
+  margin-bottom: 18px;
+}
+.control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.control-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.control-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.control-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+.separator {
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+details.advanced {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+details.advanced summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+details.advanced summary:hover {
+  color: var(--primary);
+}
+.advanced-inner {
+  margin-top: 14px;
+}
+
+/* Compare / Chart Area */
+.compare-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 20px;
+  align-items: start;
+}
+.chart-box {
+  padding: 20px;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.chart-box svg {
+  width: 100%;
+  height: 380px;
+  display: block;
+}
+.table-box {
+  padding: 16px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 12px;
+}
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dot-id {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+.empty-msg {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .layout, .compare-container {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon" aria-hidden="true">↻</div>
+    <h1>ジュールの実験室</h1>
+  </div>
+</header>
+
+<main>
+  <nav class="tabs" role="tablist">
+    <button class="tab" id="tabExp" role="tab" aria-selected="true" aria-controls="panelExp">実験する</button>
+    <button class="tab" id="tabComp" role="tab" aria-selected="false" aria-controls="panelComp">結果の比較 <span class="badge" id="trialBadge">0</span></button>
+  </nav>
+
+  <!-- TAB 1: EXPERIMENT -->
+  <section id="panelExp" role="tabpanel" aria-labelledby="tabExp">
+    <div class="layout">
+      <div>
+        <div class="card">
+          <div class="stage">
+            <svg id="apparatus" viewBox="0 0 760 440" role="img" aria-label="ジュールの羽根車装置">
+              <defs>
+                <linearGradient id="metal" x1="0" x2="1">
+                  <stop stop-color="#94a3b8"/><stop offset=".5" stop-color="#e2e8f0"/><stop offset="1" stop-color="#64748b"/>
+                </linearGradient>
+                <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+                  <stop stop-color="#bae6fd" stop-opacity=".75"/><stop offset="1" stop-color="#38bdf8" stop-opacity=".85"/>
+                </linearGradient>
+                <linearGradient id="weightGrad" x1="0" x2="1">
+                  <stop stop-color="#334155"/><stop offset=".5" stop-color="#64748b"/><stop offset="1" stop-color="#1e293b"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Base & Frame -->
+              <ellipse cx="300" cy="415" rx="190" ry="8" fill="#e2e8f0"/>
+              <path d="M120 410H480" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+              <path d="M300 70V200" stroke="#cbd5e1" stroke-width="8"/>
+              <path d="M300 95H610V410" stroke="#94a3b8" stroke-width="6" fill="none" stroke-linejoin="round"/>
+              <path d="M590 410H630" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+
+              <!-- String -->
+              <path d="M300 95H585" stroke="#92400e" stroke-width="2.5"/>
+              <path id="rope" d="M605 95V180" stroke="#92400e" stroke-width="2.5"/>
+
+              <!-- Pulleys -->
+              <g transform="translate(300 95)">
+                <circle r="26" fill="#f1f5f9" stroke="#64748b" stroke-width="4"/>
+                <g id="driveSpokes" stroke="#94a3b8" stroke-width="3">
+                  <path d="M-22 0H22M0-22V22M-15-15L15 15M-15 15L15-15"/>
+                </g>
+                <circle r="5" fill="#334155"/>
+              </g>
+              <g transform="translate(585 95)">
+                <circle r="20" fill="#f8fafc" stroke="#64748b" stroke-width="4"/>
+                <g id="pulleySpokes" stroke="#94a3b8" stroke-width="2.5">
+                  <path d="M-15 0H15M0-15V15"/>
+                </g>
+                <circle r="4" fill="#334155"/>
+              </g>
+
+              <!-- Vessel -->
+              <rect x="200" y="200" width="200" height="190" rx="14" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="4"/>
+              <path id="waterBody" d="M204 260H396V380Q396 386 388 386H212Q204 386 204 380Z" fill="url(#water)"/>
+
+              <!-- Paddles & Axle -->
+              <path d="M296 115V375" stroke="url(#metal)" stroke-width="8"/>
+              <g id="paddle">
+                <path d="M235 305L365 325L365 305L235 325Z" fill="#0284c7" opacity=".85"/>
+                <path d="M240 345L360 358L360 345L240 358Z" fill="#0369a1" opacity=".85"/>
+              </g>
+              <path id="swirl" d="M240 285Q300 270 360 285" fill="none" stroke="#0284c7" stroke-width="3" opacity="0"/>
+
+              <!-- Thermometer -->
+              <rect x="365" y="170" width="12" height="190" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+              <path id="thermoFluid" d="M371 270V355" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
+              <circle cx="371" cy="355" r="9" fill="#ef4444"/>
+
+              <!-- Falling Weight (Interactive Target) -->
+              <g id="weight" class="drag-target">
+                <rect x="575" y="180" width="60" height="54" rx="6" fill="url(#weightGrad)" stroke="#0f172a" stroke-width="2"/>
+                <path d="M595 180V172H615V180" fill="none" stroke="#475569" stroke-width="3"/>
+                <text id="weightSvgText" x="605" y="213" fill="#ffffff" font-size="16" font-weight="bold" text-anchor="middle">10 kg</text>
+              </g>
+
+              <!-- Height Guides & Marker -->
+              <path d="M660 370H690" stroke="#cbd5e1" stroke-width="2"/>
+              <path id="heightLine" d="M675 180V370" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4 4"/>
+              <path id="heightTop" d="M660 180H690" stroke="#38bdf8" stroke-width="2"/>
+              <g id="heightHandle" class="drag-target">
+                <rect x="650" y="260" width="50" height="28" rx="6" fill="#ffffff" stroke="#38bdf8" stroke-width="1.5"/>
+                <text id="heightSvgText" x="675" y="279" text-anchor="middle" fill="#0284c7" font-size="14" font-weight="bold">2.0m</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="readouts">
+            <div class="readout">
+              <div class="readout-label">水温 T</div>
+              <div class="readout-value" id="dispT">20.000<span>℃</span></div>
+            </div>
+            <div class="readout">
+              <div class="readout-label">温度上昇 ΔT</div>
+              <div class="readout-value highlight" id="dispDelta">0.000<span>℃</span></div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button id="btnPlay" class="primary">▶ スタート</button>
+            <button id="btnStep">1回落とす</button>
+            <button id="btnReset">↺ リセット</button>
+            <div class="speed-wrap">
+              <span>速度</span>
+              <select id="selSpeed">
+                <option value="1">1×</option>
+                <option value="2" selected>2×</option>
+                <option value="4">4×</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Energy Partition Card (Showing the Invisible) -->
+        <div class="card energy-card" id="energyCard" hidden>
+          <div class="control-header">
+            <span class="control-label">した仕事 W とエネルギーの内訳</span>
+            <span class="control-value" id="workVal">0 J</span>
+          </div>
+          <div class="energy-bar-wrap" role="img" aria-label="エネルギー内訳">
+            <div id="barUw" class="bar-uw" style="width: 0%"></div>
+            <div id="barUc" class="bar-uc" style="width: 0%"></div>
+            <div id="barQ"  class="bar-q"  style="width: 0%"></div>
+          </div>
+          <div class="energy-legend">
+            <div class="legend-item"><span class="legend-dot bar-uw"></span>水の ΔU: <b id="valUw">0 J</b></div>
+            <div class="legend-item" id="legendUc"><span class="legend-dot bar-uc"></span>容器の ΔU: <b id="valUc">0 J</b></div>
+            <div class="legend-item" id="legendQ"><span class="legend-dot bar-q"></span>放出された熱: <b id="valQ">0 J</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Side Panel -->
+      <aside class="card controls">
+        <div class="control-group">
+          <div class="control-header">
+            <label class="control-label" for="inMass">おもりの質量 M</label>
+            <output class="control-value" id="outMass">10 kg</output>
+          </div>
+          <input id="inMass" type="range" min="1" max="40" step="1" value="10">
+          <div class="control-ticks"><span>1 kg</span><span>40 kg</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <label class="control-label" for="inHeight">落下距離 h</label>
+            <output class="control-value" id="outHeight">2.0 m</output>
+          </div>
+          <input id="inHeight" type="range" min="0.5" max="4.0" step="0.1" value="2.0">
+          <div class="control-ticks"><span>0.5 m</span><span>4.0 m</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <label class="control-label" for="inWater">水の質量 m</label>
+            <output class="control-value" id="outWater">500 g</output>
+          </div>
+          <input id="inWater" type="range" min="100" max="1000" step="50" value="500">
+          <div class="control-ticks"><span>100 g</span><span>1000 g</span></div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-header">
+            <label class="control-label" for="inFalls">落下回数 n</label>
+            <output class="control-value" id="outFalls">5 回</output>
+          </div>
+          <input id="inFalls" type="range" min="1" max="20" step="1" value="5">
+          <div class="control-ticks"><span>1 回</span><span>20 回</span></div>
+        </div>
+
+        <div class="separator"></div>
+
+        <label class="checkbox-line">
+          <input type="checkbox" id="chkEnergy"> エネルギーの内訳を表示
+        </label>
+
+        <!-- Advanced settings: Layered Structure -->
+        <details class="advanced">
+          <summary>詳細設定（容器・熱損失）</summary>
+          <div class="advanced-inner">
+            <div class="control-group">
+              <div class="control-header">
+                <label class="control-label" for="inCap">容器の熱容量</label>
+                <output class="control-value" id="outCap">0 J/K</output>
+              </div>
+              <input id="inCap" type="range" min="0" max="800" step="50" value="0">
+            </div>
+
+            <div class="control-group">
+              <div class="control-header">
+                <label class="control-label" for="inLoss">熱損失係数</label>
+                <output class="control-value" id="outLoss">0 W/K</output>
+              </div>
+              <input id="inLoss" type="range" min="0" max="30" step="2" value="0">
+            </div>
+          </div>
+        </details>
+      </aside>
+    </div>
+  </section>
+
+  <!-- TAB 2: COMPARE & GRAPH -->
+  <section id="panelComp" role="tabpanel" aria-labelledby="tabComp" hidden>
+    <div class="compare-container">
+      <div class="card chart-box">
+        <div class="chart-header">
+          <span class="control-label">仕事 W と温度上昇 ΔT の関係</span>
+        </div>
+        <svg id="chartSvg"></svg>
+      </div>
+
+      <div class="card table-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span class="control-label">実験データ一覧</span>
+          <div>
+            <button id="btnCsv" class="primary" style="min-height:32px; padding:4px 10px; font-size:12px;">CSV保存</button>
+            <button id="btnClear" class="danger" style="min-height:32px; padding:4px 10px; font-size:12px;">全消去</button>
+          </div>
+        </div>
+        <div id="tableEmpty" class="empty-msg">実験を行うと自動で記録されます</div>
+        <table id="dataTable" hidden>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>おもり M</th>
+              <th>距離 h</th>
+              <th>水 m</th>
+              <th>回数 n</th>
+              <th>仕事 W</th>
+              <th>温度上昇 ΔT</th>
+            </tr>
+          </thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+// Physics constants
+const G = 9.8;
+const CW = 4180; // Water specific heat capacity [J/(kg*K)]
+const T0 = 20.0; // Ambient temperature [℃]
+
+const colors = ['#1976d2', '#0097a7', '#ef6c00', '#7b1fa2', '#c2185b', '#388e3c'];
+const inputIds = ['inMass', 'inHeight', 'inWater', 'inFalls', 'inCap', 'inLoss'];
+
+let cfg, state, trials = [], nextId = 1, lastFrame = 0, accumulator = 0, drag = null;
+
+const $ = id => document.getElementById(id);
+const fmt = (n, d = 0) => n.toLocaleString('ja-JP', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function readConfig() {
+  return {
+    M: +$('inMass').value,
+    h: +$('inHeight').value,
+    m: +$('inWater').value / 1000,
+    n: +$('inFalls').value,
+    Cc: +$('inCap').value,
+    k: +$('inLoss').value
+  };
+}
+
+function freshState() {
+  return {
+    T: T0,
+    W: 0,
+    out: 0,
+    done: 0,
+    distance: 0,
+    elapsed: 0,
+    rewind: 0,
+    phase: 'ready', // 'ready', 'fall', 'rewind', 'paused', 'complete'
+    running: false,
+    target: 0,
+    angle: 0,
+    recordIndex: -1
+  };
+}
+
+function heatCapacity(c) {
+  return c.m * CW + c.Cc;
+}
+
+// Analytic step integration for constant mechanical power
+function transfer(s, c, dt, work) {
+  const C = heatCapacity(c);
+  const oldT = s.T;
+  if (c.k === 0) {
+    s.T += work / C;
+  } else {
+    const a = Math.exp(-c.k * dt / C);
+    s.T = T0 + (oldT - T0) * a + (work / dt) / c.k * (-Math.expm1(-c.k * dt / C));
+  }
+  s.out += work - C * (s.T - oldT);
+  s.W += work;
+  s.elapsed += dt;
+}
+
+function step(s, c, dt) {
+  if (!s.running) return;
+  const fallSpeed = 0.8; // m/s
+  if (s.phase === 'fall') {
+    const used = Math.min(dt, (c.h - s.distance) / fallSpeed);
+    const ds = fallSpeed * used;
+    if (used > 0) {
+      transfer(s, c, used, c.M * G * ds);
+      s.distance += ds;
+      s.angle += ds * 2.6;
+    }
+    if (s.distance >= c.h - 1e-9) {
+      s.distance = c.h;
+      s.done++;
+      if (s.done >= s.target) {
+        s.running = false;
+        s.phase = s.done >= c.n ? 'complete' : 'paused';
+      } else {
+        s.phase = 'rewind';
+        s.rewind = 0;
+      }
+    }
+  } else if (s.phase === 'rewind') {
+    const rewindDuration = 0.4; // sec
+    const used = Math.min(dt, rewindDuration - s.rewind);
+    if (used > 0) transfer(s, c, used, 0);
+    s.rewind += used;
+    if (s.rewind >= rewindDuration - 1e-9) {
+      s.distance = 0;
+      s.phase = 'fall';
+    }
+  }
+}
+
+function updateControls() {
+  $('outMass').textContent = cfg.M + ' kg';
+  $('outHeight').textContent = cfg.h.toFixed(1) + ' m';
+  $('outWater').textContent = Math.round(cfg.m * 1000) + ' g';
+  $('outFalls').textContent = cfg.n + ' 回';
+  $('outCap').textContent = cfg.Cc + ' J/K';
+  $('outLoss').textContent = cfg.k + ' W/K';
+
+  const lock = state.phase !== 'ready';
+  inputIds.forEach(id => $(id).disabled = lock);
+  $('apparatus').classList.toggle('locked', lock);
+
+  $('btnStep').disabled = state.running || state.done >= cfg.n;
+  $('btnPlay').disabled = state.done >= cfg.n;
+
+  if (state.done >= cfg.n) {
+    $('btnPlay').textContent = '✓ 終了';
+  } else if (state.running) {
+    $('btnPlay').textContent = 'Ⅱ 一時停止';
+  } else if (state.phase === 'paused' || state.done > 0) {
+    $('btnPlay').textContent = '▶ 続ける';
+  } else {
+    $('btnPlay').textContent = '▶ スタート';
+  }
+}
+
+function start(single) {
+  if (state.running) {
+    state.running = false;
+    state.phase = 'paused';
+  } else if (state.done < cfg.n) {
+    state.target = single ? state.done + 1 : cfg.n;
+    if (state.done > 0 && state.distance >= cfg.h) {
+      state.phase = 'rewind';
+      state.rewind = 0;
+    } else {
+      state.phase = 'fall';
+    }
+    state.running = true;
+  }
+  accumulator = 0;
+  updateControls();
+  render();
+}
+
+function recordTrial() {
+  const currentSnapshot = {
+    id: nextId++,
+    M: cfg.M,
+    h: cfg.h,
+    m: cfg.m,
+    n: state.done,
+    W: state.W,
+    dT: state.T - T0,
+    Cc: cfg.Cc,
+    k: cfg.k
+  };
+  trials.push(currentSnapshot);
+  updateTable();
+  updateControls();
+}
+
+function render() {
+  const delta = Math.max(0, state.T - T0);
+  $('dispT').innerHTML = fmt(state.T, 3) + '<span>℃</span>';
+  $('dispDelta').innerHTML = fmt(delta, 3) + '<span>℃</span>';
+
+  // Weight vertical position
+  const startY = 370 - cfg.h * 50;
+  const drop = state.phase === 'rewind' ? cfg.h * (1 - state.rewind / 0.4) : state.distance;
+  const currentY = startY + drop * 50;
+
+  $('weight').setAttribute('transform', `translate(0, ${currentY - 180})`);
+  $('weightSvgText').textContent = cfg.M + ' kg';$('rope').setAttribute('d', `M605 95V${currentY - 8}`);
+
+  // Height guide
+  $('heightTop').setAttribute('d', `M660 ${startY}H690`);
+  $('heightLine').setAttribute('d', `M675 ${startY}V370`);
+  $('heightHandle').setAttribute('transform', `translate(0, ${(startY + 370) / 2 - 274})`);
+  $('heightSvgText').textContent = cfg.h.toFixed(1) + 'm';
+
+  // Water level
+  const waterY = 320 - (cfg.m - 0.1) / 0.9 * 60;
+  $('waterBody').setAttribute('d', `M204 ${waterY}H396V380Q396 386 388 386H212Q204 386 204 380Z`);
+
+  // Axle & Paddle rotation
+  const deg = (state.angle * 180 / Math.PI) % 360;
+  $('driveSpokes').setAttribute('transform', `rotate(${deg})`);
+  $('pulleySpokes').setAttribute('transform', `rotate(${deg})`);
+  const scaleX = 0.2 + 0.8 * Math.abs(Math.cos(state.angle));
+  $('paddle').setAttribute('transform', `translate(300, 0) scale(${scaleX}, 1) translate(-300, 0)`);
+
+  // Agitation & Thermometer
+  const isMoving = state.running && state.phase === 'fall';
+  $('swirl').setAttribute('opacity', isMoving ? 0.6 : 0);
+  const fluidHeight = Math.min(85, delta * 20);
+  $('thermoFluid').setAttribute('d', `M371 ${355 - fluidHeight}V355`);
+
+  // Energy Bar Visualization
+  if (!$('energyCard').hidden) {
+    const uw = cfg.m * CW * delta;
+    const uc = cfg.Cc * delta;
+    const q = Math.max(0, state.out);
+    const W = state.W;
+
+    $('workVal').textContent = fmt(W, 1) + ' J';$('valUw').textContent = fmt(uw, 1) + ' J';
+    $('valUc').textContent = fmt(uc, 1) + ' J';$('valQ').textContent = fmt(q, 1) + ' J';
+
+    $('barUw').style.width = (W > 0 ? (uw / W * 100) : 0) + '%';
+    $('barUc').style.width = (W > 0 ? (uc / W * 100) : 0) + '\%';$('barQ').style.width  = (W > 0 ? (q / W * 100) : 0) + '%';
+
+    $('legendUc').style.display = cfg.Cc > 0 ? 'flex' : 'none';$('legendQ').style.display  = cfg.k > 0 ? 'flex' : 'none';
+  }
+}
+
+function frame(now) {
+  const dt = lastFrame ? Math.min((now - lastFrame) / 1000, 0.1) : 0;
+  lastFrame = now;
+
+  if (state.running) {
+    accumulator += dt * (+$('selSpeed').value);
+    let loops = 0;
+    while (accumulator >= 1 / 120 && state.running && loops++ < 120) {
+      step(state, cfg, 1 / 120);
+      accumulator -= 1 / 120;
+    }
+    if (!state.running && (state.phase === 'complete' || state.done === state.target)) {
+      accumulator = 0;
+      recordTrial();
+    }
+    render();
+  }
+  requestAnimationFrame(frame);
+}
+
+function switchTab(tabId) {
+  const isExp = tabId === 'tabExp';
+  $('panelExp').hidden = !isExp;
+  $('panelComp').hidden = isExp;
+  $('tabExp').setAttribute('aria-selected', isExp);$('tabComp').setAttribute('aria-selected', !isExp);
+  if (!isExp) drawChart();
+}
+
+function updateTable() {
+  $('trialBadge').textContent = trials.length;
+  $('tableEmpty').hidden = trials.length > 0;
+  $('dataTable').hidden = trials.length === 0;
+
+  const body = $('dataBody');
+  body.replaceChildren();
+
+  trials.forEach((t, i) => {
+    const row = document.createElement('tr');
+    const color = colors[i % colors.length];
+    row.innerHTML = `
+      <td><span class="dot-id" style="background:${color}">${t.id}</span></td>
+      <td>${t.M} kg</td>
+      <td>${t.h.toFixed(1)} m</td>
+      <td>${Math.round(t.m * 1000)} g</td>
+      <td>${t.n} 回</td>
+      <td>${fmt(t.W, 1)} J</td>
+      <td>${fmt(t.dT, 3)} ℃</td>
+    `;
+    body.appendChild(row);
+  });
+  drawChart();
+}
+
+function niceMax(val) {
+  if (val <= 0) return 1;
+  const base = Math.pow(10, Math.floor(Math.log10(val)));
+  const norm = val / base;
+  const steps = [1, 2, 2.5, 4, 5, 8, 10];
+  const step = steps.find(s => s >= norm) || 10;
+  return step * base;
+}
+
+function drawChart() {
+  if ($('panelComp').hidden) return;
+
+  const svg = $('chartSvg');
+  const w = svg.clientWidth || 500;
+  const h = svg.clientHeight || 380;
+  const pad = { top: 24, right: 24, bottom: 48, left: 60 };
+  const pw = w - pad.left - pad.right;
+  const ph = h - pad.top - pad.bottom;
+
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.replaceChildren();
+
+  const maxW = niceMax(Math.max(100, ...trials.map(t => t.W)) * 1.15);
+  const maxDT = niceMax(Math.max(0.1, ...trials.map(t => t.dT)) * 1.15);
+
+  const ns = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs) => {
+    const elem = document.createElementNS(ns, tag);
+    for (const [k, v] of Object.entries(attrs)) elem.setAttribute(k, v);
+    svg.appendChild(elem);
+    return elem;
+  };
+
+  // Grid & Axis
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + ph - (ph * i / 4);
+    const x = pad.left + (pw * i / 4);
+
+    el('line', { x1: pad.left, y1: y, x2: w - pad.right, y2: y, stroke: '#f1f5f9' });
+    el('line', { x1: x, y1: pad.top, x2: x, y2: pad.top + ph, stroke: '#f1f5f9' });
+
+    const txtY = el('text', { x: pad.left - 8, y: y + 4, 'text-anchor': 'end', fill: '#94a3b8', 'font-size': '11' });
+    txtY.textContent = fmt(maxDT * i / 4, 3);
+
+    const txtX = el('text', { x: x, y: h - pad.bottom + 20, 'text-anchor': 'middle', fill: '#94a3b8', 'font-size': '11' });
+    txtX.textContent = fmt(maxW * i / 4, 0);
+  }
+
+  el('path', { d: `M${pad.left} ${pad.top}V${pad.top + ph}H${w - pad.right}`, fill: 'none', stroke: '#cbd5e1', 'stroke-width': '1.5' });
+
+  // Axis Labels
+  const lblY = el('text', { x: pad.left, y: 16, fill: '#64748b', 'font-size': '12', 'font-weight': '600' });
+  lblY.textContent = '温度上昇 ΔT [℃]';
+  const lblX = el('text', { x: pad.left + pw / 2, y: h - 10, 'text-anchor': 'middle', fill: '#64748b', 'font-size': '12', 'font-weight': '600' });
+  lblX.textContent = '仕事 W [J]';
+
+  // Points
+  trials.forEach((t, i) => {
+    const cx = pad.left + (t.W / maxW) * pw;
+    const cy = pad.top + ph - (t.dT / maxDT) * ph;
+    const color = colors[i % colors.length];
+
+    el('circle', { cx, cy, r: 6, fill: color, stroke: '#fff', 'stroke-width': '2' });
+  });
+}
+
+function downloadCSV() {
+  if (!trials.length) return;
+  const rows = [['Trial', 'Mass_kg', 'Height_m', 'Water_kg', 'Falls', 'Work_J', 'DeltaT_C']];
+  trials.forEach(t => rows.push([t.id, t.M, t.h, t.m, t.n, t.W.toFixed(2), t.dT.toFixed(5)]));
+  const csv = '\ufeff' + rows.map(r => r.join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'joule_data.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+// Event Listeners
+inputIds.forEach(id => {
+  $(id).addEventListener('input', () => {
+    cfg = readConfig();
+    state = freshState();
+    updateControls();
+    render();
+  });
+});
+
+$('btnPlay').addEventListener('click', () => start(false));
+$('btnStep').addEventListener('click', () => start(true));$('btnReset').addEventListener('click', () => {
+  state = freshState();
+  updateControls();
+  render();
+});
+
+$('chkEnergy').addEventListener('change', () => {
+  $('energyCard').hidden = !$('chkEnergy').checked;
+  render();
+});
+
+$('tabExp').addEventListener('click', () => switchTab('tabExp'));$('tabComp').addEventListener('click', () => switchTab('tabComp'));
+
+$('btnCsv').addEventListener('click', downloadCSV);$('btnClear').addEventListener('click', () => {
+  if (confirm('記録した実験データをすべて消去しますか？')) {
+    trials = [];
+    nextId = 1;
+    updateTable();
+  }
+});
+
+// Pointer drag for apparatus height
+function getSvgY(e) {
+  const pt = $('apparatus').createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  return pt.matrixTransform($('apparatus').getScreenCTM().inverse()).y;
+}
+
+['weight', 'heightHandle'].forEach(id => {
+  const el = $(id);
+  el.addEventListener('pointerdown', e => {
+    if (state.phase !== 'ready') return;
+    e.preventDefault();
+    drag = { id, startY: getSvgY(e), startH: cfg.h };
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag || drag.id !== id) return;
+    const dy = getSvgY(e) - drag.startY;
+    const dh = (id === 'weight' ? -dy / 50 : -dy / 25);
+    const newH = Math.max(0.5, Math.min(4.0, Math.round((drag.startH + dh) * 10) / 10));
+    $('inHeight').value = newH;
+    cfg = readConfig();
+    updateControls();
+    render();
+  });
+  const endDrag = () => { drag = null; };
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+});
+
+// Init
+cfg = readConfig();
+state = freshState();
+updateControls();
+updateTable();
+render();
+requestAnimationFrame(frame);
+window.addEventListener('resize', () => {
+  if (!$('panelComp').hidden) drawChart();
+});
+</script>
+</body>
+</html>
